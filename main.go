@@ -17,9 +17,9 @@ func main() {
 	go func() {
 		for {
 			data := make([]byte, 512)
-			len, addr, _ := listener.ReadFromUDP(data)
+			size, addr, _ := listener.ReadFromUDP(data)
 			fmt.Println("Received Request:", addr)
-			ch <- UDPPacket{addr, data[:len]}
+			ch <- UDPPacket{addr, data[:size]}
 		}
 	}()
 	for {
@@ -30,8 +30,8 @@ func main() {
 			_ = socket.SetDeadline(time.Now().Add(time.Duration(time.Second * 2)))
 			_, _ = socket.Write(packet.data)
 			result := make([]byte, 512)
-			len, addr, _ := socket.ReadFromUDP(result)
-			listener.WriteToUDP(result[:len], packet.addr)
+			size, addr, _ := socket.ReadFromUDP(result)
+			listener.WriteToUDP(result[:size], packet.addr)
 			fmt.Println("Response to:", packet.addr)
 			socket.Close()
 		}()

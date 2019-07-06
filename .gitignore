@@ -9,6 +9,7 @@
 *.dll
 *.so
 *.dylib
+EchoDNS
 
 # Test binary, built with `go test -c`
 *.test
