@@ -18,7 +18,7 @@ package protocol
 //     |                     QCLASS                    |
 //     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 type Question struct {
-	Name  uint16 // QNAME    * // TODO: not u16
-	Type  uint16 // QTYPE   16
-	Class uint16 // OCLASS  16
+	Name  string // QNAME    *
+	Type  Type   // QTYPE   16
+	Class Class  // OCLASS  16
 }

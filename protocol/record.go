@@ -27,6 +27,14 @@ package protocol
 //     /                     RDATA                     /
 //     /                                               /
 //     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
-type Record struct {
-	TTL uint32
+type Resource struct {
+	Name   string
+	Type   Type
+	Class  Class
+	TTL    uint32
+	Length uint16
+	Data   ResourceData
+}
+
+type ResourceData interface {
 }

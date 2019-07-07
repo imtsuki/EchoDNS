@@ -1,10 +1,10 @@
 package main
 
 import (
+	"EchoDNS/protocol"
 	"fmt"
 	"net"
 	"time"
-	"EchoDNS/protocol"
 )
 
 type Server struct {
@@ -33,8 +33,8 @@ func main() {
 			data := make([]byte, 512)
 			size, addr, _ := listener.ReadFromUDP(data)
 			var header protocol.Header
-			
-			fmt.Println("Received Request:", header.Decode(data))
+			header.Decode(data)
+			fmt.Println("Received Request:", protocol.DecodeName(data, 12))
 			ch <- UDPPacket{addr, data[:size]}
 		}
 	}()
