@@ -4,24 +4,41 @@ import (
 	"fmt"
 	"net"
 	"time"
+	"EchoDNS/protocol"
 )
+
+type Server struct {
+	conn *net.UDPConn
+}
+
+func (server Server) run() {
+
+}
 
 func main() {
 	usage()
 	addr, _ := net.ResolveUDPAddr("udp", "0.0.0.0:53")
-	listener, _ := net.ListenUDP("udp", addr)
+	listener, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	defer func() {
 		_ = listener.Close()
 	}()
+
 	ch := make(chan UDPPacket)
 	go func() {
 		for {
 			data := make([]byte, 512)
 			size, addr, _ := listener.ReadFromUDP(data)
-			fmt.Println("Received Request:", addr)
+			var header protocol.Header
+			
+			fmt.Println("Received Request:", header.Decode(data))
 			ch <- UDPPacket{addr, data[:size]}
 		}
 	}()
+
 	for {
 		packet := <-ch
 		go func() {

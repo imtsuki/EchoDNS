@@ -38,26 +38,45 @@ type Header struct {
 }
 
 func (header Header) Encode() []byte {
-	bytes := make([]byte, 12)
-	binary.BigEndian.PutUint16(bytes[0:2], header.ID)
-	bytes[2] |= uint8(header.MessageType) << 7
+	data := make([]byte, 12)
+	binary.BigEndian.PutUint16(data[0:2], header.ID)
+	data[2] |= uint8(header.MessageType) << 7
 	if header.Authoritative {
-		bytes[2] |= 1 << 2
+		data[2] |= 1 << 2
 	}
 	if header.Truncation {
-		bytes[2] |= 1 << 1
+		data[2] |= 1 << 1
 	}
 	if header.RecursionDesired {
-		bytes[2] |= 1 << 0
+		data[2] |= 1 << 0
 	}
 	if header.RecursionAvailable {
-		bytes[3] |= 1 << 7
+		data[3] |= 1 << 7
 	}
-	bytes[2] |= (uint8(header.OpCode) & 0xF) << 3
-	bytes[3] |= uint8(header.ResponseCode) & 0xF
-	binary.BigEndian.PutUint16(bytes[4:6], header.QuestionCount)
-	binary.BigEndian.PutUint16(bytes[6:8], header.AnswerCount)
-	binary.BigEndian.PutUint16(bytes[8:10], header.NameServerCount)
-	binary.BigEndian.PutUint16(bytes[10:12], header.AdditionalCount)
-	return bytes
+	data[2] |= (uint8(header.OpCode) & 0xF) << 3
+	data[3] |= uint8(header.ResponseCode) & 0xF
+	binary.BigEndian.PutUint16(data[4:6], header.QuestionCount)
+	binary.BigEndian.PutUint16(data[6:8], header.AnswerCount)
+	binary.BigEndian.PutUint16(data[8:10], header.NameServerCount)
+	binary.BigEndian.PutUint16(data[10:12], header.AdditionalCount)
+	return data
+}
+
+func (header *Header) Decode(data []byte) Header {
+	*header = Header{
+		ID:                 binary.BigEndian.Uint16(data[0:2]),
+		MessageType:        MessageType((data[2] >> 7) & 0x01),
+		OpCode:             OpCode((data[2] >> 3) & 0x0F),
+		Authoritative:      data[2]&0x04 != 0,
+		Truncation:         data[2]&0x02 != 0,
+		RecursionDesired:   data[2]&0x01 != 0,
+		RecursionAvailable: data[3]&0x80 != 0,
+		Reserved:           0,
+		ResponseCode:       ResponseCode(data[3] & 0x0F),
+		QuestionCount:      binary.BigEndian.Uint16(data[4:6]),
+		AnswerCount:        binary.BigEndian.Uint16(data[6:8]),
+		NameServerCount:    binary.BigEndian.Uint16(data[8:10]),
+		AdditionalCount:    binary.BigEndian.Uint16(data[10:12]),
+	}
+	return *header
 }
