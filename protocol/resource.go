@@ -37,4 +37,37 @@ type Resource struct {
 }
 
 type ResourceData interface {
+	Encode() []byte
+	ResourceType() Type
+}
+
+type AResource struct {
+	IP [4]byte
+}
+
+func (r *AResource) ResourceType() Type {
+	return TypeA
+}
+
+func (r *AResource) Encode() []byte {
+	return r.IP[:]
+}
+
+type AAAAResource struct {
+}
+
+func (r *AAAAResource) ResourceType() Type {
+	return TypeAAAA
+}
+
+type ALLResource struct {
+	Data []byte
+}
+
+func (r *ALLResource) ResourceType() Type {
+	return TypeALL
+
+}
+func (r *ALLResource) Encode() []byte {
+		return r.Data
 }

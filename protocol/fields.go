@@ -1,6 +1,7 @@
 package protocol
 
 import "encoding/binary"
+import "strings"
 
 type OpCode uint8
 type MessageType uint8
@@ -51,12 +52,108 @@ const (
 	ClassANY Class = 255
 )
 
-type Name struct {
-	name string
+func (responseCode ResponseCode) String() string {
+	switch responseCode {
+	case NoError:
+		return "NOERROR"
+	case FormErr:
+		return "FORMERR"
+	case ServFail:
+		return "SERVFAIL"
+	case NXDomain:
+		return "NXDOMAIN"
+	case NotImp:
+		return "NOTIMP"
+	case Refused:
+		return "REFUSED"
+	default:
+		return "Unknown RCode"
+	}
 }
 
-func DecodeName(data []byte, off int) string {
-	var name = ""
+func (opcode OpCode) String() string {
+	switch opcode {
+	case OpCodeQuery:
+		return "Standard Query"
+	case OpCodeIQuery:
+		return "Inverse Query"
+	case OpCodeStatus:
+		return "Status"
+	default:
+		return "Unknown OpCode"
+	}
+}
+
+func (messageType MessageType) String() string {
+	switch messageType {
+	case Query:
+		return "Query"
+	case Response:
+		return "Response"
+	default:
+		return "Unknown QR"
+	}
+}
+
+func (typ Type) String() string {
+	switch typ {
+	case TypeA:
+		return "A"
+	case TypeNS:
+		return "NS"
+	case TypeCNAME:
+		return "CNAME"
+	case TypeSOA:
+		return "SOA"
+	case TypeWKS:
+		return "WKS"
+	case TypePTR:
+		return "PTR"
+	case TypeMX:
+		return "MX"
+	case TypeTXT:
+		return "TXT"
+	case TypeAAAA:
+		return "AAAA"
+	case TypeSRV:
+		return "SRV"
+	case TypeHINFO:
+		return "HINFO"
+	case TypeMINFO:
+		return "MINFO"
+	case TypeAXFR:
+		return "AXFR"
+	case TypeALL:
+		return "ALL"
+	default:
+		return "Unknown Type"
+	}
+}
+
+func (class Class) String() string {
+	switch class {
+	case ClassINET:
+		return "IN"
+	case ClassCSNET:
+		return "CS"
+	case ClassCHAOS:
+		return "CH"
+	case ClassHESIOD:
+		return "HS"
+	case ClassANY:
+		return "Any"
+	default:
+		return "Unknown Class"
+	}
+}
+
+type Name struct {
+	Domain string
+	Compressed bool
+}
+
+func (name *Name) Decode(data []byte, off int) (Name, int) {
+	name.Domain = ""
 Loop:
 	for {
 		c := int(data[off])
@@ -64,19 +161,38 @@ Loop:
 		switch c & 0xc0 {
 		case 0x00:
 			if c == 0x00 {
+				off++
 				break Loop
 			}
 			off++
-			name += string(data[off:off+c]) + "."
+			name.Domain += string(data[off:off+c]) + "."
 			off += c
 		case 0xc0:
-			off = DecodePtr(data[off : off+2])
+			off = DecodePtr(data, off)
 		}
 	}
-
-	return name
+	return *name, off
 }
 
-func DecodePtr(data []byte) int {
-	return int(binary.BigEndian.Uint16(data[0:2]) ^ 0xc000)
+
+func DecodePtr(data []byte, off int) int {
+	return int(binary.BigEndian.Uint16(data[off:off+2]) ^ 0xc000)
+}
+
+func (name *Name) Encode() []byte {
+	if name.Compressed {
+		return []byte{0xc0, 0x0c}
+	}
+
+	data := make([]byte, 0)
+	parts := strings.Split(name.Domain, ".")
+	for _, part := range parts {
+		if len(part) == 0 {
+			continue
+		}
+		data = append(data, byte(len(part)))
+		data = append(data, []byte(part)...)
+	}
+	data = append(data, 0)
+	return data
 }

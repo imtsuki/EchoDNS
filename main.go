@@ -32,9 +32,9 @@ func main() {
 		for {
 			data := make([]byte, 512)
 			size, addr, _ := listener.ReadFromUDP(data)
-			var header protocol.Header
-			header.Decode(data)
-			fmt.Println("Received Request:", protocol.DecodeName(data, 12))
+			var message protocol.Message
+			message.Decode(data, 0)
+			fmt.Println("Received Query:", message)
 			ch <- UDPPacket{addr, data[:size]}
 		}
 	}()

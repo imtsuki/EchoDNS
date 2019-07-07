@@ -64,9 +64,8 @@ func TestDecodeHeader(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00,
 	}
 	var header Header
-	if !reflect.DeepEqual(header.Decode(data), expected) {
-		t.Fail()
-	}
+	header.Decode(data, 0)
+
 	if !reflect.DeepEqual(header, expected) {
 		t.Fail()
 	}
@@ -76,8 +75,8 @@ func TestDecodePtr(t *testing.T) {
 	data := []byte{
 		0xc0, 0x0c,
 	}
-	if DecodePtr(data) != 0x0c {
-		t.Log(DecodePtr(data))
+	if DecodePtr(data, 0) != 0x0c {
+		t.Log(DecodePtr(data, 0))
 		t.Fail()
 	}
 }
@@ -94,7 +93,9 @@ func TestDecodeName(t *testing.T) {
 		0x6f, 0x6d, 0x00,
 	}
 	expected := "ocsp.dcocsp.cn.w.kunlunar.com."
-	if DecodeName(data, 0) != expected {
+	name := Name{}
+	name.Decode(data, 0)
+	if name.Domain != expected {
 		t.Fail()
 	}
 }
@@ -113,12 +114,77 @@ func TestCompressedName(t *testing.T) {
 		0x01, 0x00, 0x00, 0x0a, 0x66, 0x00, 0x04, 0x75,
 		0x12, 0xed, 0x1d,
 	}
+	name := Name{}
+
+	name.Decode(data, 35)
 	expected := "ocsp.digicert.com."
-	if DecodeName(data, 35) != expected {
+
+	if name.Domain != expected {
 		t.Fail()
 	}
+
+	name.Decode(data, 67)
 	expected = "cs9.wac.phicdn.net."
-	if DecodeName(data, 67) != expected {
+	if name.Domain != expected {
+		t.Fail()
+	}
+}
+
+func TestEncodeName(t *testing.T) {
+	name := Name {
+		Domain: "deepzz.com.",
+	}
+
+	encoded := name.Encode()
+
+	expected := []byte("\x06\x64\x65\x65\x70\x7a\x7a\x03\x63\x6f\x6d\x00")
+
+	if !reflect.DeepEqual(encoded, expected) {
+		t.Log(encoded)
+		t.Log(expected)
+		t.Fail()
+	}
+}
+
+func TestDecodeQuestion(t *testing.T) {
+	data := []byte("\x06\x64\x65\x65\x70\x7a\x7a\x03\x63\x6f\x6d\x00\x00\x01\x00\x01")
+
+	question := Question{}
+
+	expected := Question{
+		Name: Name {
+			Domain: "deepzz.com.",
+		},
+		Type: TypeA,
+		Class: ClassINET,
+	}
+
+	_, off := question.Decode(data, 0)
+	if !reflect.DeepEqual(question, expected) {
+		t.Log(question)
+		t.Fail()
+	}
+	if off != 16 {
+		t.Log(off)
+		t.Fail()
+	}
+}
+
+func TestEncodeQuestion(t *testing.T) {
+	expected := []byte("\x06\x64\x65\x65\x70\x7a\x7a\x03\x63\x6f\x6d\x00\x00\x01\x00\x01")
+
+	question := Question{
+		Name: Name {
+			Domain: "deepzz.com",
+		},
+		Type: TypeA,
+		Class: ClassINET,
+	}
+
+	encoded := question.Encode()
+	if !reflect.DeepEqual(encoded, expected) {
+		t.Log(encoded)
+		t.Log(expected)
 		t.Fail()
 	}
 }
