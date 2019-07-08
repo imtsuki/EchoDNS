@@ -116,22 +116,22 @@ func TestCompressedName(t *testing.T) {
 	}
 	name := Name{}
 
-	name.Decode(data, 35)
+	_, off := name.Decode(data, 35)
 	expected := "ocsp.digicert.com."
 
-	if name.Domain != expected {
+	if name.Domain != expected || off != 37 {
 		t.Fail()
 	}
 
-	name.Decode(data, 67)
+	_, off = name.Decode(data, 67)
 	expected = "cs9.wac.phicdn.net."
-	if name.Domain != expected {
+	if name.Domain != expected || off != 69 {
 		t.Fail()
 	}
 }
 
 func TestEncodeName(t *testing.T) {
-	name := Name {
+	name := Name{
 		Domain: "deepzz.com.",
 	}
 
@@ -152,10 +152,10 @@ func TestDecodeQuestion(t *testing.T) {
 	question := Question{}
 
 	expected := Question{
-		Name: Name {
+		Name: Name{
 			Domain: "deepzz.com.",
 		},
-		Type: TypeA,
+		Type:  TypeA,
 		Class: ClassINET,
 	}
 
@@ -174,10 +174,10 @@ func TestEncodeQuestion(t *testing.T) {
 	expected := []byte("\x06\x64\x65\x65\x70\x7a\x7a\x03\x63\x6f\x6d\x00\x00\x01\x00\x01")
 
 	question := Question{
-		Name: Name {
+		Name: Name{
 			Domain: "deepzz.com",
 		},
-		Type: TypeA,
+		Type:  TypeA,
 		Class: ClassINET,
 	}
 

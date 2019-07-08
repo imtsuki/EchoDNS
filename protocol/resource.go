@@ -1,5 +1,7 @@
 package protocol
 
+import "encoding/binary"
+
 // Resource record format [RFC 1035 4.1.2]
 //
 // The answer, authority, and additional sections all share the same
@@ -28,7 +30,7 @@ package protocol
 //     /                                               /
 //     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 type Resource struct {
-	Name   string
+	Name   Name
 	Type   Type
 	Class  Class
 	TTL    uint32
@@ -39,6 +41,18 @@ type Resource struct {
 type ResourceData interface {
 	Encode() []byte
 	ResourceType() Type
+}
+
+func (r Resource) Encode() []byte {
+	name := r.Name.Encode()
+	data := r.Data.Encode()
+	r.Length = uint16(len(data))
+	fields := make([]byte, 10)
+	binary.BigEndian.PutUint16(fields[0:2], uint16(r.Type))
+	binary.BigEndian.PutUint16(fields[2:4], uint16(r.Class))
+	binary.BigEndian.PutUint32(fields[4:8], uint32(r.TTL))
+	binary.BigEndian.PutUint16(fields[8:10], uint16(r.Length))
+	return append(append(name, fields...), data...)
 }
 
 type AResource struct {
@@ -54,10 +68,15 @@ func (r *AResource) Encode() []byte {
 }
 
 type AAAAResource struct {
+	IP [16]byte
 }
 
 func (r *AAAAResource) ResourceType() Type {
 	return TypeAAAA
+}
+
+func (r *AAAAResource) Encode() []byte {
+	return r.IP[:]
 }
 
 type ALLResource struct {
@@ -69,5 +88,5 @@ func (r *ALLResource) ResourceType() Type {
 
 }
 func (r *ALLResource) Encode() []byte {
-		return r.Data
+	return r.Data
 }

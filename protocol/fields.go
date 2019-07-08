@@ -148,12 +148,14 @@ func (class Class) String() string {
 }
 
 type Name struct {
-	Domain string
+	Domain     string
 	Compressed bool
 }
 
 func (name *Name) Decode(data []byte, off int) (Name, int) {
 	name.Domain = ""
+	ptrEncountered := false
+	newOff := off
 Loop:
 	for {
 		c := int(data[off])
@@ -162,18 +164,27 @@ Loop:
 		case 0x00:
 			if c == 0x00 {
 				off++
+				if !ptrEncountered {
+					newOff = off
+				}
 				break Loop
 			}
 			off++
 			name.Domain += string(data[off:off+c]) + "."
 			off += c
+			if !ptrEncountered {
+				newOff = off
+			}
 		case 0xc0:
+			if !ptrEncountered {
+				ptrEncountered = true
+				newOff = off + 2
+			}
 			off = DecodePtr(data, off)
 		}
 	}
-	return *name, off
+	return *name, newOff
 }
-
 
 func DecodePtr(data []byte, off int) int {
 	return int(binary.BigEndian.Uint16(data[off:off+2]) ^ 0xc000)

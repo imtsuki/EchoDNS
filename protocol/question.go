@@ -20,9 +20,9 @@ import "encoding/binary"
 //     |                     QCLASS                    |
 //     +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+
 type Question struct {
-	Name  Name // QNAME    *
-	Type  Type   // QTYPE   16
-	Class Class  // OCLASS  16
+	Name  Name  // QNAME    *
+	Type  Type  // QTYPE   16
+	Class Class // OCLASS  16
 }
 
 func (question Question) Encode() []byte {
@@ -40,8 +40,8 @@ func (question Question) Encode() []byte {
 
 func (question *Question) Decode(data []byte, off int) (Question, int) {
 	_, off = question.Name.Decode(data, off)
-	question.Type = Type(binary.BigEndian.Uint16(data[off:off+2]))
-	question.Class = Class(binary.BigEndian.Uint16(data[off+2:off+4]))
+	question.Type = Type(binary.BigEndian.Uint16(data[off : off+2]))
+	question.Class = Class(binary.BigEndian.Uint16(data[off+2 : off+4]))
 	off += 4
 	return *question, off
 }

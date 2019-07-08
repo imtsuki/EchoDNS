@@ -64,7 +64,7 @@ func (header Header) Encode() []byte {
 
 func (header *Header) Decode(data []byte, off int) (Header, int) {
 	*header = Header{
-		ID:                 binary.BigEndian.Uint16(data[off:off+2]),
+		ID:                 binary.BigEndian.Uint16(data[off : off+2]),
 		MessageType:        MessageType((data[off+2] >> 7) & 0x01),
 		OpCode:             OpCode((data[off+2] >> 3) & 0x0F),
 		Authoritative:      data[off+2]&0x04 != 0,
@@ -73,10 +73,10 @@ func (header *Header) Decode(data []byte, off int) (Header, int) {
 		RecursionAvailable: data[off+3]&0x80 != 0,
 		Reserved:           0,
 		ResponseCode:       ResponseCode(data[off+3] & 0x0F),
-		QuestionCount:      binary.BigEndian.Uint16(data[off+4:off+6]),
-		AnswerCount:        binary.BigEndian.Uint16(data[off+6:off+8]),
-		NameServerCount:    binary.BigEndian.Uint16(data[off+8:off+10]),
-		AdditionalCount:    binary.BigEndian.Uint16(data[off+10:off+12]),
+		QuestionCount:      binary.BigEndian.Uint16(data[off+4 : off+6]),
+		AnswerCount:        binary.BigEndian.Uint16(data[off+6 : off+8]),
+		NameServerCount:    binary.BigEndian.Uint16(data[off+8 : off+10]),
+		AdditionalCount:    binary.BigEndian.Uint16(data[off+10 : off+12]),
 	}
 	return *header, off + 12
 }

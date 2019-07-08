@@ -33,19 +33,44 @@ func main() {
 			data := make([]byte, 512)
 			size, addr, _ := listener.ReadFromUDP(data)
 			var message protocol.Message
-			message.Decode(data, 0)
-			fmt.Println("Received Query:", message)
-			ch <- UDPPacket{addr, data[:size]}
+			message.Decode(data[:size], 0)
+			fmt.Println("Query:", message)
+			ch <- UDPPacket{addr, message}
 		}
 	}()
 
 	for {
 		packet := <-ch
 		go func() {
+			if len(packet.message.Questions) > 0 {
+				if packet.message.Questions[0].Name.Domain == "bupt.edu.cn." {
+					response := packet.message
+					response.Header.MessageType = protocol.Response
+					response.Header.RecursionDesired = true
+					response.Header.RecursionAvailable = true
+					if packet.message.Questions[0].Type == protocol.TypeA {
+						answer := protocol.Resource{
+							Name: protocol.Name{
+								Compressed: true,
+							},
+							Type:   protocol.TypeA,
+							Class:  protocol.ClassINET,
+							TTL:    53,
+							Length: 4,
+							Data: &protocol.AResource{
+								IP: [4]byte{10, 3, 8, 216},
+							},
+						}
+						response.Answers = append(response.Answers, answer)
+					}
+					listener.WriteToUDP(response.Encode(), packet.addr)
+					return
+				}
+			}
 			addr, _ := net.ResolveUDPAddr("udp", "114.114.114.114:53")
 			socket, _ := net.DialUDP("udp", nil, addr)
 			_ = socket.SetDeadline(time.Now().Add(time.Duration(time.Second * 2)))
-			_, _ = socket.Write(packet.data)
+			_, _ = socket.Write(packet.message.RawPacket)
 			result := make([]byte, 512)
 			size, addr, _ := socket.ReadFromUDP(result)
 			listener.WriteToUDP(result[:size], packet.addr)
@@ -56,8 +81,8 @@ func main() {
 }
 
 type UDPPacket struct {
-	addr *net.UDPAddr
-	data []byte
+	addr    *net.UDPAddr
+	message protocol.Message
 }
 
 func usage() {
