@@ -9,9 +9,49 @@ import (
 
 var domains = map[string]net.IP{}
 
+type UDPPacket struct {
+	addr    *net.UDPAddr
+	message Message
+}
+
 func init() {
 	domains["bupt.edu.cn."] = net.ParseIP("10.3.8.216")
 	domains["baidu.com."] = net.ParseIP("0.0.0.0")
+}
+
+func Serve() {
+	addr, _ := net.ResolveUDPAddr("udp", "0.0.0.0:53")
+	listener, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer func() {
+		_ = listener.Close()
+	}()
+
+	ch := make(chan UDPPacket)
+	go func() {
+		for {
+			data := make([]byte, 512)
+			size, addr, _ := listener.ReadFromUDP(data)
+			var message Message
+			message.Decode(data[:size], 0)
+			fmt.Println("Query:", message)
+			ch <- UDPPacket{addr, message}
+		}
+	}()
+
+	for {
+		packet := <-ch
+		go func() {
+			response := Resolve(packet.message)
+			_, err := listener.WriteToUDP(response, packet.addr)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}()
+	}
 }
 
 func Resolve(message Message) (responsePacket []byte) {
@@ -79,5 +119,4 @@ func ForwardQuery(message Message) ([]byte, error) {
 		return nil, err
 	}
 	return result[:size], nil
-
 }
