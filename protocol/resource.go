@@ -1,6 +1,7 @@
 package protocol
 
 import "encoding/binary"
+import "net"
 
 // Resource record format [RFC 1035 4.1.2]
 //
@@ -56,7 +57,7 @@ func (r Resource) Encode() []byte {
 }
 
 type AResource struct {
-	IP [4]byte
+	IP net.IP
 }
 
 func (r *AResource) ResourceType() Type {
@@ -64,11 +65,11 @@ func (r *AResource) ResourceType() Type {
 }
 
 func (r *AResource) Encode() []byte {
-	return r.IP[:]
+	return r.IP.To4()
 }
 
 type AAAAResource struct {
-	IP [16]byte
+	IP net.IP
 }
 
 func (r *AAAAResource) ResourceType() Type {
@@ -76,7 +77,7 @@ func (r *AAAAResource) ResourceType() Type {
 }
 
 func (r *AAAAResource) Encode() []byte {
-	return r.IP[:]
+	return r.IP.To16()
 }
 
 type ALLResource struct {
