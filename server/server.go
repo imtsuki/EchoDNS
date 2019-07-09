@@ -2,12 +2,16 @@ package server
 
 import (
 	. "EchoDNS/protocol"
+	"bufio"
 	"fmt"
 	"net"
+	"os"
+	"strings"
 	"time"
 )
 
 var domains = map[string]net.IP{}
+var remoteServer string
 
 type UDPPacket struct {
 	addr    *net.UDPAddr
@@ -19,7 +23,32 @@ func init() {
 	domains["baidu.com."] = net.ParseIP("0.0.0.0")
 }
 
-func Serve() {
+func readHosts(hosts string) {
+	wd, _ := os.UserHomeDir()
+	_ = os.Chdir(wd)
+	file, err := os.Open(hosts)
+	if err != nil {
+		fmt.Printf("Load hosts file %s error\n", hosts)
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		host := strings.Fields(line)
+		if len(host) == 2 {
+			if !strings.HasSuffix(host[1], ".") {
+				host[1] = host[1] + "."
+			}
+			domains[host[1]] = net.ParseIP(host[0])
+		}
+	}
+}
+
+func Serve(remote string, hosts string, debug bool) {
+	remoteServer = remote + ":53"
+	readHosts(hosts)
 	addr, _ := net.ResolveUDPAddr("udp", "0.0.0.0:53")
 	listener, err := net.ListenUDP("udp", addr)
 	if err != nil {
@@ -94,7 +123,7 @@ func Resolve(message Message) (responsePacket []byte) {
 }
 
 func ForwardQuery(message Message) ([]byte, error) {
-	addr, _ := net.ResolveUDPAddr("udp", "114.114.114.114:53")
+	addr, _ := net.ResolveUDPAddr("udp", remoteServer)
 	socket, err := net.DialUDP("udp", nil, addr)
 	if err != nil {
 		return nil, err

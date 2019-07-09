@@ -48,6 +48,7 @@ func (r Resource) Encode() []byte {
 	name := r.Name.Encode()
 	data := r.Data.Encode()
 	r.Length = uint16(len(data))
+	r.Type = r.Data.ResourceType()
 	fields := make([]byte, 10)
 	binary.BigEndian.PutUint16(fields[0:2], uint16(r.Type))
 	binary.BigEndian.PutUint16(fields[2:4], uint16(r.Class))
